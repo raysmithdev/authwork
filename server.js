@@ -1,10 +1,12 @@
 const bodyParser = require('body-parser');
+const {BasicStrategy} = require('passport-http');
 const express = require('express');
 const mongoose = require('mongoose');
 const morgan = require('morgan');
+const passport = require('passport');
 
 const {DATABASE_URL, PORT} = require('./config');
-const {BlogPost} = require('./models');
+const {BlogPost, UserPost} = require('./models');
 
 const app = express();
 
@@ -12,6 +14,31 @@ app.use(morgan('common'));
 app.use(bodyParser.json());
 
 mongoose.Promise = global.Promise;
+
+
+
+const strategy = new BasicStrategy(
+  (username, password, cb) => {
+    UserPost
+      .findOne({username})
+      .exec()
+      .then(user => {
+        if (!user) {
+          return cb(null, false, {
+            message: 'Incorrect username'
+          });
+        }
+        if (user.password !== password) {
+          return cb(null, false, 'Incorrect password');
+        }
+        return cb(null, user);
+      })
+      .catch(err => cb(err))
+});
+
+passport.use(strategy);
+
+
 
 
 app.get('/posts', (req, res) => {
