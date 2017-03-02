@@ -1,6 +1,7 @@
 const bcrypt = require('bcryptjs');
-mongoose.Promise = global.Promise;
 const mongoose = require('mongoose');
+mongoose.Promise = global.Promise;
+
 
 const blogPostSchema = mongoose.Schema({
   author: {
@@ -30,8 +31,8 @@ blogPostSchema.methods.apiRepr = function() {
 const UserSchema = mongoose.Schema({
   username: {type: String, required: true, unique:true},
   password: {type: String, required: true},
-  firsName: {type: String, default:""},
-  lastName: {type: Date, default:""}
+  firstname: {type: String, default:""},
+  lastname: {type: String, default:""}
 });
 
 
@@ -39,8 +40,8 @@ const UserSchema = mongoose.Schema({
 UserSchema.methods.apiRepr = function() {
   return {
     username: this.username || "",
-    firsName: this.firsName || "",
-    lastName: this.lastName || ""
+    firstname: this.firstname || "",
+    lastname: this.lastname || ""
   };
 }
 

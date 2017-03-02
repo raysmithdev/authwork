@@ -19,7 +19,7 @@ mongoose.Promise = global.Promise;
 
 const strategy = new BasicStrategy(
   (username, password, cb) => {
-    UserPost
+    UserPost    
       .findOne({username})
       .exec()
       .then(user => {
@@ -28,10 +28,13 @@ const strategy = new BasicStrategy(
             message: 'Incorrect username'
           });
         }
-        if (user.password !== password) {
-          return cb(null, false, 'Incorrect password');
-        }
-        return cb(null, user);
+        user.validatePassword(password)
+        .then(function(value){
+          if(value === true){
+            return cb(null, user);
+          }
+          return cb(null, false);
+        }) 
       })
       .catch(err => cb(err))
 });
@@ -51,7 +54,7 @@ app.post('/newuser', (req,res)=> {
       return res.status(422).json({message: 'Missing field: username'});
     }
 
-   let {username, password, firstName, lastName} = req.body;
+   let {username, password, firstname, lastname} = req.body;
 
   if (typeof username !== 'string') {
       return res.status(422).json({message: 'Incorrect field type: username'});
@@ -79,7 +82,35 @@ app.post('/newuser', (req,res)=> {
 
 
     return UserPost
-      .
+      .find({username})
+      .count()
+      .exec()
+      .then(function(count){
+        if (count > 0) {
+          return res.status(422).json({message: 'username already taken'});
+        }
+        return UserPost.hashPassword(password)
+      })
+      .then(function(hash){
+        console.log(firstname);
+        return UserPost
+        .create({
+          username: username,
+          password: hash,
+          firstname: firstname,
+          lastname: lastname
+        })
+        console.log()
+      })
+      .then(function(user){
+        console.log(user);
+        return res.status(201).json(user.apiRepr());
+      })
+      .catch(function(err) {
+        console.error(err);
+        res.status(500).json({message: 'Internal server error'})
+      });
+
 
 })
 
@@ -90,10 +121,25 @@ app.post('/newuser', (req,res)=> {
 
 
 
+app.get('/newuser', (req, res) => {
+  return UserPost
+    .find()
+    .exec()
+    .then(users => res.json(users.map(user => user.apiRepr())))
+    .catch(function(err){
+      console.error(err);
+      res.status(500).json({message: 'internal server error'})
+    })
+});
 
 
 
 
+app.get('/validuser',passport.authenticate('basic', {session: false}),function(req,res) {
+  return res.json({
+    username:req.user.apiRepr()
+  })  
+})
 
 
 
